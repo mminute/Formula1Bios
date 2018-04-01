@@ -1,3 +1,5 @@
+require 'nokogiri'
+
 class DriverBioScraper
     attr_reader :driver_bios
 
