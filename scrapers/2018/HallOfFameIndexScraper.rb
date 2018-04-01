@@ -1,6 +1,6 @@
 require 'nokogiri'
-require_relative '../utils/StripSeasons'
-require_relative '../utils/ReplaceOddCharacters'
+require_relative '../../utils/StripSeasons'
+require_relative '../../utils/ReplaceOddCharacters'
 
 class HallOfFameIndexScraper
     attr_reader :doc
