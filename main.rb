@@ -1,6 +1,7 @@
 require 'open-uri'
 require_relative './scrapers/2018/DriverBioScraper'
-require_relative './scrapers/2018/HallOfFameIndexScraper'
+require_relative './scrapers/HallOfFame/HallOfFameDriverBioScraper'
+require_relative './scrapers/HallOfFame/HallOfFameIndexScraper'
 require_relative './scrapers/2018/SeasonIndexScraper'
 require_relative './utils/CreateDirIfNeeded'
 
@@ -17,15 +18,11 @@ hall_of_fame_url = base_url + '/en/championship/drivers/hall-of-fame.html'
 index_dot_html = '/index.html'
 # Directories
 index_file_dir = currentDir + "/html/indexFiles/#{current_season}"
-hall_of_fame_file_dir = currentDir + "/html/indexFiles/hallOfFame"
 # Filenames
 index_filename = index_file_dir + index_dot_html
-hall_of_fame_filename = hall_of_fame_file_dir + index_dot_html
 
 # Create directories
-[index_file_dir, hall_of_fame_file_dir].each { |dirName|
-    create_dir_if_needed(dirName)
-}
+create_dir_if_needed(index_file_dir)
 
 if File.exist?(index_filename)
     season_index_file = File.read(index_filename)
@@ -34,15 +31,7 @@ else
     IO.write(index_file_dir + '/index.html', season_index_file)
 end
 
-if File.exist?(hall_of_fame_filename)
-    hall_of_fame_file = File.read(hall_of_fame_filename)
-else
-    hall_of_fame_file = open(hall_of_fame_url).read
-    IO.write(hall_of_fame_file_dir + '/index.html', hall_of_fame_file) 
-end
-
 currentSeasonDriverUrls = SeasonIndexScraper.new(season_index_file).find_drivers
-# hallOfFameDriverUrls = HallOfFameIndexScraper.new(hall_of_fame_file).find_drivers
 
 create_dir_if_needed(currentDir + "/html/driverBios")
 
@@ -102,17 +91,17 @@ current_driver_bios = currentSeasonDriverUrls.map { |driver|
     driver_html
 }
 
-driver_bio_text = current_driver_bios.map { |driver_bios|
+driver_bio_texts = current_driver_bios.map { |driver_bios|
     bios = DriverBioScraper.new(driver_bios).parse_bios
 
     { primaryKey: driver_bios[:primaryKey] }.merge(bios)
 }
 
 # Write the bios to a file
-driver_bio_text.each { |driver_bios|
+driver_bio_texts.each { |driver_bios|
     text_destination_dir = currentDir + "/data/#{current_season}/#{driver_bios[:primaryKey]}"
 
-    test_has_bio = []
+    missing_bios = []
 
     [:bio, :yearByYear].each { |bio_type|
         file_destination = text_destination_dir + "/#{bio_type}.txt"
@@ -121,15 +110,69 @@ driver_bio_text.each { |driver_bios|
                 IO.write(file_destination, driver_bios[bio_type])
             end
         else
-            test_has_bio << bio_type.to_s
+            missing_bios << bio_type.to_s
         end
     }
 
-    if test_has_bio.length > 0
+    if missing_bios.length > 0
         puts driver_bios[:primaryKey]
-        puts "MISSING: #{test_has_bio.join(', ')}"
+        puts "MISSING: #{missing_bios.join(', ')}"
     end
 }
 
-# TODO: Download hall of fame bios
-# TODO: create_nested_dirs
+# ========================================================
+# ========================================================
+# HALL OF FAME DRIVER BIOS
+# ========================================================
+# ========================================================
+
+# Directories
+hall_of_fame_file_dir = currentDir + "/html/indexFiles/hallOfFame"
+hall_of_fame_filename = hall_of_fame_file_dir + index_dot_html
+# Create directory
+create_dir_if_needed(hall_of_fame_file_dir)
+
+# Create Hall of Fame directories
+['html', 'data'].each { |subDir|
+    create_dir_if_needed(currentDir + "/#{subDir}/HallOfFame")
+}
+
+if File.exist?(hall_of_fame_filename)
+    hall_of_fame_file = File.read(hall_of_fame_filename)
+else
+    hall_of_fame_file = open(hall_of_fame_url).read
+    IO.write(hall_of_fame_file_dir + '/index.html', hall_of_fame_file) 
+end
+
+hallOfFameDriverUrls = HallOfFameIndexScraper.new(hall_of_fame_file).find_drivers
+
+hall_of_fame_bios = hallOfFameDriverUrls.map { |driver|
+    driver_html = { primaryKey: driver[:primaryKey] }
+
+    destination_file = currentDir + "/html/HallOfFame/#{driver[:primaryKey]}.html"
+
+    if File.exist?(destination_file)
+        driver_html[:bio] = File.read(destination_file)
+    else
+        bio_file = open(base_url + driver[:url]).read
+        IO.write(destination_file, bio_file)
+        driver_html[:bio] = bio_file
+    end
+
+    driver_html
+}
+
+hall_of_fame_bio_texts = hall_of_fame_bios.map { |driver_bio|
+    bio = HallOfFameDriverBioScraper.new(driver_bio).parse_bio
+
+    { primaryKey: driver_bio[:primaryKey], bio: bio }
+}
+
+# Write the bios to a file
+hall_of_fame_bio_texts.each { |driver_bio|
+    text_destination = currentDir + "/data/HallOfFame/#{driver_bio[:primaryKey]}.txt"
+
+    if !File.exist?(text_destination)
+        IO.write(text_destination, driver_bio[:bio])
+    end
+}
