@@ -8,7 +8,7 @@ class HallOfFameDriverBioScraper
     end
 
     def parse_bio
-        bio_html = driver_bio[:bio]
+        bio_html = driver_bio[:hallOfFameBio]
         doc = Nokogiri::HTML(bio_html)
         
         strapline_text = doc.css('h5.strapline').text.strip

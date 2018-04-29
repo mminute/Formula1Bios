@@ -9,5 +9,5 @@ def write_js_object(ruby_hash)
         formatted = formatted + " #{k}: #{val},"
     }
 
-    formatted[0..-2] + ' },'
+    formatted[0..-2] + ' }'
 end

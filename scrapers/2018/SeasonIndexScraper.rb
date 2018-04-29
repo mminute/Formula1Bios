@@ -13,7 +13,7 @@ class SeasonIndexScraper
             url = node.attributes['href'].value
             {
                 url: url,
-                bio: url[0..-6] + '/Biography.html',
+                profileBio: url[0..-6] + '/Biography.html',
                 yearByYear:  url[0..-6] + '/Year_by_Year.html',
                 primaryKey: replace_odd_chars(
                     node.css('h1.driver-name').text
