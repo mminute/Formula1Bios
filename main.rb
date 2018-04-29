@@ -4,7 +4,7 @@ require_relative './scrapers/HallOfFame/HallOfFameDriverBioScraper'
 require_relative './scrapers/HallOfFame/HallOfFameIndexScraper'
 require_relative './scrapers/2018/SeasonIndexScraper'
 require_relative './utils/CreateDirIfNeeded'
-require_relative './utils/WriteJSObject'
+require_relative './utils/ComposeExport'
 
 # Env constants
 currentDir = Dir.getwd
@@ -43,12 +43,12 @@ create_dir_if_needed(currentDir + "/html/driverBios")
 }
 
 bio_html_key_mapping = {
-    '/bio.html': :bio,
+    '/bio.html': :profileBio,
     '/year_by_year.html': :yearByYear,
 }
 
 text_to_url_key_mapping = {
-    bio: :bioUrl,
+    profileBio: :profileBioUrl,
     yearByYear: :yearByYearUrl,
 }
 
@@ -69,8 +69,8 @@ current_driver_bios = currentSeasonDriverUrls.map { |driver|
             driver_html[text_to_url_key_mapping[bio_html_key_mapping[f.to_sym]]] = driver[bio_html_key_mapping[f.to_sym]]
         else
             if File.exist?(html_destination_dir + '/driver.html')
-                driver_html[:bio] = File.read(html_destination_dir + '/driver.html')
-                driver_html[:bioUrl] = driver[:url]
+                driver_html[:profileBio] = File.read(html_destination_dir + '/driver.html')
+                driver_html[:profileBioUrl] = driver[:url]
                 break
             end
 
@@ -104,8 +104,8 @@ current_driver_bios = currentSeasonDriverUrls.map { |driver|
         bio_file = open(base_url + driver[:url]).read
         IO.write(destination_file, bio_file)
 
-        driver_html[:bio] = bio_file
-        driver_html[:bioUrl] = driver[:url]
+        driver_html[:profileBio] = bio_file
+        driver_html[:profileBioUrl] = driver[:url]
     end
 
     driver_html
@@ -122,10 +122,7 @@ driver_bio_texts.each { |driver_bios|
   # driver_bios >> primaryKey, bio, bioUrl, yearByYear, yearByYearUrl
     text_destination = currentDir + "/data/#{current_season}/#{driver_bios[:primaryKey]}.js"
 
-    write_to_file =
-      "module.exports = [\n" +
-      write_js_object(driver_bios) +
-      "\n]"
+    write_to_file = compose_export(driver_bios)
 
     IO.write(text_destination, write_to_file)
 }
@@ -163,11 +160,11 @@ hall_of_fame_bios = hallOfFameDriverUrls.map { |driver|
     destination_file = currentDir + "/html/HallOfFame/#{driver[:primaryKey]}.html"
 
     if File.exist?(destination_file)
-        driver_html[:bio] = File.read(destination_file)
+        driver_html[:hallOfFameBio] = File.read(destination_file)
     else
-        bio_file = open(base_url + driver[:url]).read
+        bio_file = open(base_url + driver[:hallOfFameUrl]).read
         IO.write(destination_file, bio_file)
-        driver_html[:bio] = bio_file
+        driver_html[:hallOfFameBio] = bio_file
     end
 
     driver.merge(driver_html)
@@ -177,7 +174,7 @@ hall_of_fame_bios = hallOfFameDriverUrls.map { |driver|
 hall_of_fame_bio_texts = hall_of_fame_bios.map { |driver_bio|
     bio = HallOfFameDriverBioScraper.new(driver_bio).parse_bio
 
-    driver_bio.merge({ bio: bio })
+    driver_bio.merge({ hallOfFameBio: bio })
 }
 
 # Write the bios to a file
@@ -185,10 +182,7 @@ hall_of_fame_bio_texts.each { |driver_bio|
     text_destination = currentDir + "/data/HallOfFame/#{driver_bio[:primaryKey]}.js"
 
     if !File.exist?(text_destination)
-      write_to_file =
-        "module.exports = [\n" +
-        write_js_object(driver_bio) +
-        "\n]"
+      write_to_file = compose_export(driver_bio)
 
       IO.write(text_destination, write_to_file)
     end

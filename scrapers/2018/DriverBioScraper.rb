@@ -8,7 +8,7 @@ class DriverBioScraper
     end
 
     def parse_bios
-        [:bio, :yearByYear].each_with_object({}) { |bio_type, parsed_bios|
+        [:profileBio, :yearByYear].each_with_object({}) { |bio_type, parsed_bios|
             bio_html = driver_bios[bio_type]
 
             if bio_html

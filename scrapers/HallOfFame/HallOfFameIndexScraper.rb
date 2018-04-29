@@ -19,7 +19,7 @@ class HallOfFameIndexScraper
                 
             {
                 primaryKey: primaryKey,
-                url: node.attributes['href'].value,
+                hallOfFameUrl: node.attributes['href'].value,
             }
         }
     end
